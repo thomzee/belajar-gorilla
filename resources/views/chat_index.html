@@ -1,0 +1,138 @@
+<html lang="en" class="h-100">
+<head>
+    <title>Assignment 3</title>
+    <link rel="stylesheet" href="static/bootstrap/css/bootstrap.min.css">
+    <style>
+        .chat-bubble {
+            display:block;
+            margin-bottom: 10px;
+            margin-top: 10px;
+            padding: 5px 10px;
+        }
+        .chat-info {
+            text-align: center;
+            display:block;
+            margin-bottom: 10px;
+            margin-top: 10px;
+        }
+    </style>
+
+    <script src="/static/jquery/jquery.min.js"></script>
+    <script src="/static/bootstrap/js/bootstrap.min.js"></script>
+</head>
+<body class="h-100">
+<div class="wrapper d-flex flex-column h-100">
+    <main class="content flex-grow-1 overflow-auto">
+        <div class="container flex-grow-1 overflow-auto" id="messaging">
+            <p id="output"></p>
+        </div>
+    </main>
+    <footer class="footer mt-auto py-3 bg-success">
+        <div class="container">
+            <div class="greetings-message">
+                <h4 style="color: white">Howdy, <b id="username" style="color: black">Stranger</b></h4>
+            </div>
+            <div class="chat-input">
+                <div class="row">
+                    <div class="input-group mb-3">
+                        <input type="text" id="chat-input" class="form-control" placeholder="Type a message" aria-label="Write something..." aria-describedby="button-addon2">
+                        <button class="btn btn-outline-light" type="button" id="chat-submit">Send</button>
+                    </div>
+                    <button class="btn btn-danger" type="button" id="disconnect">Disconnect</button>
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<script type="application/javascript">
+    let loc = window.location;
+    let uri = 'ws:';
+
+    if (loc.protocol === 'https:') {
+        uri = 'wss:';
+    }
+    uri += '//' + loc.host;
+    uri += loc.pathname + 'ws';
+
+    ws = new WebSocket(uri)
+
+    function getDay(idx) {
+        let days = [
+            "Minggu",
+            "Senin",
+            "Selasa",
+            "Rabu",
+            "Kamis",
+            "Jumat",
+            "Sabtu",
+        ]
+        return days[idx];
+    }
+
+    function getMonth(idx) {
+        let objDate = new Date();
+        objDate.setDate(1);
+        objDate.setMonth(idx);
+        let locale = "id-ID";
+        return objDate.toLocaleString(locale, {month: "long"});
+    }
+
+    $(function () {
+        let name = prompt("Please enter your name", "John Smith");
+        if (name != null) {
+            $("#username").html(name);
+            ws.onopen = function() {
+                let chatBubble = "<div class=\"chat-info bg-secondary rounded\">";
+                chatBubble += "<p><b>"+$("#username").html()+"</b> is connected.</p>";
+                chatBubble += "</div>";
+                ws.send(chatBubble);
+            }
+        }
+        $("#chat-input").focus();
+    });
+
+    function sendChat() {
+        let chatInput = $("#chat-input");
+        if (chatInput.val().length > 0) {
+            let dt = new Date();
+            let time = getDay(dt.getDay()) + ", " + dt.getDate() + " " + getMonth(dt.getMonth()) + " " + dt.getFullYear() + " <strong>" + dt.getHours() + ":" + dt.getMinutes() + "</strong>";
+            let username = $("#username").html();
+            let chatBubble = "<div class=\"chat-bubble bg-success rounded\">";
+            chatBubble += "<small class=\"float-end\">"+time+"</small>";
+            chatBubble += "<b>"+username+"</b>";
+            chatBubble += "<p>"+chatInput.val()+"</p>";
+            chatBubble += "</div>";
+            ws.send(chatBubble);
+            chatInput.val("");
+            chatInput.focus();
+        }
+    }
+
+    $("#chat-submit").on("click", function (e) {
+        sendChat();
+        e.preventDefault();
+    });
+
+    $(document).on('keypress',function(e) {
+        if(e.which === 13) {
+            sendChat();
+        }
+    });
+
+    $("#disconnect").on("click", function () {
+        $("#chat-input").attr("disabled", "disabled");
+        $("#chat-submit").attr("disabled", "disabled");
+        $("#disconnect").attr("disabled", "disabled");
+        let chatBubble = "<div class=\"chat-info bg-secondary rounded\">";
+        chatBubble += "<p><b>"+$("#username").html()+"</b> disconnected.</p>";
+        chatBubble += "</div>";
+        ws.send(chatBubble);
+    });
+
+    ws.onmessage = function(evt) {
+        $("#messaging").append(evt.data);
+    }
+</script>
+</body>
+</html>
